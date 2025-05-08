@@ -1,0 +1,66 @@
+#******************** Settings ************************ 
+
+*** Settings ***
+Documentation    Issue Test Scenario. CRUD Operation: Create, Read, Update, Delete.
+...              This test suite verifies the ability to create, update, reuse, and delete issues within a Git-based project management platform.
+
+Pre Condition     A project must be created by the user before running these tests.
+Post Condition    Issues are created, updated, duplicated, and deleted as per test logic.
+Tags              Issue    CRUD    Positive    UI
+
+#******************* Common Variables ********************
+
+*** Variables ***
+${PROJECT_URL}             https://gitlab.com/your-namespace/your-project
+${ISSUES_URL}              ${PROJECT_URL}/-/issues
+${ISSUE_TITLE}             First Issue
+${UPDATED_ISSUE_TITLE}     Updated First Issue
+${SECOND_ISSUE_TITLE}      Updated First Issue
+
+#******************** Test Cases *************************
+
+*** Test Cases ***
+
+Create issue
+    [Tags]    Positive
+    Open Browser    ${ISSUES_URL}/new    chrome
+    Input Text    id=issue_title    ${ISSUE_TITLE}
+    Input Text    id=issue_description    This is the first issue created for testing.
+    Click Button    xpath=//button[contains(text(),'Create issue')]
+    Wait Until Page Contains    ${ISSUE_TITLE}    timeout=10s
+    Page Should Contain    ${ISSUE_TITLE}
+    Close Browser
+
+Update name of issue
+    [Tags]    Positive
+    Open Browser    ${ISSUES_URL}    chrome
+    Click Element    xpath=//a[contains(text(),'${ISSUE_TITLE}')]
+    Click Button    xpath=//button[contains(text(),'Edit title')]
+    Input Text    id=issue_title    ${UPDATED_ISSUE_TITLE}
+    Click Button    xpath=//button[contains(text(),'Save changes')]
+    Wait Until Page Contains    ${UPDATED_ISSUE_TITLE}    timeout=10s
+    Page Should Contain    ${UPDATED_ISSUE_TITLE}
+    Close Browser
+
+Create second issue with previous updated name
+    [Tags]    Positive
+    Open Browser    ${ISSUES_URL}/new    chrome
+    Input Text    id=issue_title    ${SECOND_ISSUE_TITLE}
+    Input Text    id=issue_description    Second issue with same title as the updated first issue.
+    Click Button    xpath=//button[contains(text(),'Create issue')]
+    Wait Until Page Contains    ${SECOND_ISSUE_TITLE}    timeout=10s
+    Page Should Contain    ${SECOND_ISSUE_TITLE}
+    Close Browser
+
+Delete first issue
+    [Tags]    Positive
+    Open Browser    ${ISSUES_URL}    chrome
+    # Open the updated issue (first one)
+    Click Element    xpath=//a[contains(text(),'${UPDATED_ISSUE_TITLE}')]
+    Click Button    xpath=//button[contains(text(),'Edit')]
+    Scroll Element Into View    xpath=//button[contains(text(),'Delete')]
+    Click Button    xpath=//button[contains(text(),'Delete')]
+    Handle Alert    ACCEPT
+    Wait Until Page Contains    Issue was successfully deleted    timeout=10s
+    Page Should Contain    Issue was successfully deleted
+    Close Browser

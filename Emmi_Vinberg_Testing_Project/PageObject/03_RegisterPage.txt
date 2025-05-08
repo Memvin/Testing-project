@@ -1,0 +1,86 @@
+#******************** Settings ************************
+
+*** Settings ***
+Documentation    User Registration Test Scenario with verification.
+...              Includes both valid and invalid credential checks on GitLab registration page.
+...              Covers form validation, duplicate handling, empty fields, and CAPTCHA.
+
+Precondition     User is on the GitLab registration page.
+Postcondition    Account is either successfully registered or validation messages are displayed.
+
+
+Tags             Registration    Smoke    Positive    Negative
+
+#******************* Common Variables ********************
+
+*** Variables ***
+${LOGIN_URL}             https://gitlab.com/users/sign_up
+${VALID_USERNAME}        testuser123
+${VALID_EMAIL}           testuser123@example.com
+${VALID_PASSWORD}        StrongPass123!
+
+${EXISTING_USERNAME}     testuser123
+${INVALID_EMAIL}         testuser123example.com
+${EMPTY_PASSWORD}        
+${WITHOUT_RECAPTCHA}     True    # Simulation only, as real CAPTCHA can’t be bypassed in automation
+
+#******************** Test Cases *************************
+
+*** Test Cases ***
+
+Register user with valid username and password
+    [Tags]    Positive
+    Open Browser    ${LOGIN_URL}    chrome
+    Input Text    id=new_user_username    ${VALID_USERNAME}
+    Input Text    id=new_user_email       ${VALID_EMAIL}
+    Input Text    id=new_user_password    ${VALID_PASSWORD}
+    # Note: CAPTCHA cannot be handled in automation, assume manual entry here
+    Sleep    5s    # Simulate user solving CAPTCHA
+    Click Button    name=commit
+    Wait Until Page Contains Element    xpath=//div[contains(@class, 'flash-notice')]    timeout=10s
+    Page Should Contain    Welcome
+    Close Browser
+
+Register user with existing username
+    [Tags]    Negative
+    Open Browser    ${LOGIN_URL}    chrome
+    Input Text    id=new_user_username    ${EXISTING_USERNAME}
+    Input Text    id=new_user_email       anotheremail@example.com
+    Input Text    id=new_user_password    ${VALID_PASSWORD}
+    Sleep    5s
+    Click Button    name=commit
+    Page Should Contain    Username has already been taken
+    Close Browser
+
+Register user with empty password
+    [Tags]    Negative
+    Open Browser    ${LOGIN_URL}    chrome
+    Input Text    id=new_user_username    uniqueuser01
+    Input Text    id=new_user_email       uniqueuser01@example.com
+    Input Text    id=new_user_password    ${EMPTY_PASSWORD}
+    Sleep    5s
+    Click Button    name=commit
+    Page Should Contain    Password can't be blank
+    Close Browser
+
+Register user with invalid email
+    [Tags]    Negative
+    Open Browser    ${LOGIN_URL}    chrome
+    Input Text    id=new_user_username    uniqueuser02
+    Input Text    id=new_user_email       ${INVALID_EMAIL}
+    Input Text    id=new_user_password    ${VALID_PASSWORD}
+    Sleep    5s
+    Click Button    name=commit
+    Page Should Contain    Email is invalid
+    Close Browser
+
+Register user without recaptcha (simulation)
+    [Tags]    Negative
+    Open Browser    ${LOGIN_URL}    chrome
+    Input Text    id=new_user_username    uniqueuser03
+    Input Text    id=new_user_email       uniqueuser03@example.com
+    Input Text    id=new_user_password    ${VALID_PASSWORD}
+    # Simulating CAPTCHA not solved
+    Click Button    name=commit
+    Page Should Contain    Please verify you are human
+    Close Browser

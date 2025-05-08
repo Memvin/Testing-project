@@ -1,0 +1,84 @@
+#******************** Settings ************************
+
+*** Settings ***
+Documentation    Project CRUD Operation Test Scenario.
+...              This suite covers the creation, update, deletion, and validation of projects.
+...              It includes both positive and negative test flows.
+
+Precondition     User is logged in and on the "New Project" page.
+Postcondition    Projects are created, updated, or deleted based on test case.
+Tags             Project    CRUD    Positive    Negative    UI
+
+#******************* Common Variables ********************
+
+*** Variables ***
+${BASE_URL}                https://gitlab.com/projects
+${PROJECT_NAME}            First Project
+${DUPLICATE_NAME}          First Project
+${TEMPLATE_PROJECT_NAME}   Template Project
+${UPDATED_PROJECT_NAME}    Updated Project Name
+${SUCCESS_MESSAGE}         Project 'First Project' was successfully created.
+
+#******************** Test Cases *************************
+
+*** Test Cases ***
+
+Create blank project
+    [Tags]    Positive
+    Open Browser    ${BASE_URL}/new    chrome
+    Input Text    id=project_name    ${PROJECT_NAME}
+    Click Button    name=create_project
+    Wait Until Page Contains    ${SUCCESS_MESSAGE}    timeout=10s
+    Page Should Contain    ${SUCCESS_MESSAGE}
+    Close Browser
+
+Create template project
+    [Tags]    Positive
+    Open Browser    ${BASE_URL}/new    chrome
+    Click Element    xpath=//a[contains(text(),'Create from template')]
+    Input Text    id=project_name    ${TEMPLATE_PROJECT_NAME}
+    Click Button    name=create_project
+    Wait Until Page Contains    Project '${TEMPLATE_PROJECT_NAME}' was successfully created.    timeout=10s
+    Page Should Contain    Project '${TEMPLATE_PROJECT_NAME}' was successfully created.
+    Close Browser
+
+Update name of template project
+    [Tags]    Positive
+    Open Browser    ${BASE_URL}    chrome
+    # Navigate to the project settings
+    Click Element    xpath=//a[contains(text(),'${TEMPLATE_PROJECT_NAME}')]
+    Click Element    xpath=//a[contains(text(),'Settings')]
+    Input Text    id=project_name    ${UPDATED_PROJECT_NAME}
+    Click Button    name=save_changes
+    Wait Until Page Contains    Project was successfully updated    timeout=10s
+    Page Should Contain    Project was successfully updated
+    Close Browser
+
+Delete template project
+    [Tags]    Positive
+    Open Browser    ${BASE_URL}    chrome
+    Click Element    xpath=//a[contains(text(),'${UPDATED_PROJECT_NAME}')]
+    Click Element    xpath=//a[contains(text(),'Settings')]
+    Scroll Element Into View    xpath=//button[contains(text(),'Delete project')]
+    Click Button    xpath=//button[contains(text(),'Delete project')]
+    Input Text    id=confirm_name_input    ${UPDATED_PROJECT_NAME}
+    Click Button    xpath=//button[contains(text(),'Confirm')]
+    Wait Until Page Contains    scheduled for deletion    timeout=10s
+    Page Should Contain    scheduled for deletion
+    Close Browser
+
+Validate that message is showing Project 'First Project' was successfully created.
+    [Tags]    Positive
+    Open Browser    ${BASE_URL}    chrome
+    Click Element    xpath=//a[contains(text(),'${PROJECT_NAME}')]
+    Page Should Contain    ${SUCCESS_MESSAGE}
+    Close Browser
+
+Create a blank project with the previous same name
+    [Tags]    Negative
+    Open Browser    ${BASE_URL}/new    chrome
+    Input Text    id=project_name    ${DUPLICATE_NAME}
+    Click Button    name=create_project
+    Wait Until Page Contains    Name has already been taken    timeout=10s
+    Page Should Contain    Name has already been taken
+    Close Browser
